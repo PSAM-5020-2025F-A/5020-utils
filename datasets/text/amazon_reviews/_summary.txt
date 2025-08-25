@@ -1,0 +1,5 @@
+books: 500000
+dvd: 122438
+electronics: 21009
+music: 172180
+toys: 11147
