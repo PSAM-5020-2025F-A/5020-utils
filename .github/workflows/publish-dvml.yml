@@ -3,6 +3,12 @@ name: Publish dataset zips
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - "datasets/**/*"
+      - "src/image/**/*"
+      - .gitignore
+      - README.md
+      - ".github/workflows/publish-dvml.yml"
 
 jobs:
   build:
@@ -20,14 +26,18 @@ jobs:
       with:
         repository: visualizedata/ml-fa25
         path: dvml
-        token: ${{ secrets.DV_PUSH_TOKEN }}
+        token: ${{ secrets.DV_PUSH_TOKEN }} 
 
 
     - name: Copy files
       run: |
-        rm -rf dvml/utils
-        mkdir dvml/utils
-        cp -r utils/datasets utils/src dvml/utils/
+        cd dvml
+        git rm -rf utils
+        mkdir utils
+        cp -r ../utils/datasets ../utils/src ./utils/
+        cp ../utils/.gitignore ./utils/
+        cp ../utils/README.md ./utils/
+        cd ..
 
     - name: Push
       run: |

@@ -51,3 +51,12 @@ jobs:
           *.tar.gz
         tag_name: ${{ steps.tag.outputs.TAG_NAME }}
         token: ${{ secrets.PUSH_TOKEN }}
+
+    - name: Release DV
+      uses: softprops/action-gh-release@v2
+      with:
+        repository: visualizedata/ml-fa25
+        files: |
+          *.tar.gz
+        tag_name: ${{ steps.tag.outputs.TAG_NAME }}
+        token: ${{ secrets.DV_PUSH_TOKEN }}
