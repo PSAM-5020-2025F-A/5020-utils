@@ -1,0 +1,41 @@
+name: Publish dataset zips
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        path: utils
+        token: ${{ secrets.PUSH_TOKEN }}
+
+    - name: Checkout DVML
+      uses: actions/checkout@v3
+      with:
+        repository: visualizedata/ml-fa25
+        path: dvml
+        token: ${{ secrets.DV_PUSH_TOKEN }}
+
+
+    - name: Copy files
+      run: |
+        rm -rf dvml/utils
+        mkdir dvml/utils
+        cp -r utils/datasets utils/src dvml/utils/
+
+    - name: Push
+      run: |
+        cd dvml
+        GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-8)
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        COMMIT_MSG=utils-${{ github.ref_name }}-$(git log --format=%h -1)
+        git add -f utils
+        git commit -m $COMMIT_MSG
+        git push -f origin main
