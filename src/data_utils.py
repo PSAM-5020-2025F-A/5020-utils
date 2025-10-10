@@ -25,7 +25,7 @@ def toDataFrame(X):
   if isinstance(X, pd.core.frame.DataFrame) or isinstance(X, pd.core.series.Series):
     return X
   try:
-    X = pd.DataFrame(X)
+    return pd.DataFrame(X)
   except:
     raise Exception("Wrong type. Please use arrays, numpy arrays, pandas DataFrames or pandas Series.")
 
