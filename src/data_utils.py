@@ -51,25 +51,27 @@ def classification_error_topk(labels, scores, k=1):
   return 1.0 - accuracy_score_topk(labels, scores, k)
 
 
-def distance_score(X, y, cluster_centers):
+def distance_score(X, y):
   X_np = toDataFrame(X).values
-  y_np = toDataFrame(y).values
-  num_clusters = len(cluster_centers)
+  y_np = toDataFrame(y).values.reshape(-1)
+  num_clusters = len(np.unique(y_np))
+  cluster_centers = np.array([X_np[y_np == c].mean(axis=0) for c in range(num_clusters)])
   point_centers = [cluster_centers[i] for i in y_np]
   point_diffs = np.array([p - c for p,c in zip(X_np, point_centers)])
   cluster_L2 = [np.sqrt(np.square(point_diffs[y_np == c]).sum(axis=1)).mean() for c in range(num_clusters)]
   return sum(cluster_L2) / len(cluster_L2)
 
 def balance_score(y):
-  y_np = toDataFrame(y).values
-  num_clusters, counts = np.unique(y_np, return_counts=True)
+  y_np = toDataFrame(y).values.reshape(-1)
+  cluster_ids, counts = np.unique(y_np, return_counts=True)
+  num_clusters = len(cluster_ids)
   sum_dists = np.abs(counts / len(y_np) - (1 / num_clusters)).sum()
   scale_factor = 0.5 * num_clusters / (num_clusters - 1)
   return 1.0 - (scale_factor * sum_dists)
 
 def silhouette_score(X, y):
   X_np = toDataFrame(X).values
-  y_np = toDataFrame(y).values
+  y_np = toDataFrame(y).values.reshape(-1)
   return skl_silhouette_score(X_np, y_np)
 
 
