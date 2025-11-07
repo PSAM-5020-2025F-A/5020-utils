@@ -34,11 +34,11 @@ jobs:
 
       - name: Push
         run: |
-          cd dvml
-          GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-8)
+          cd utils
+          COMMIT_MSG=utils-${{ github.ref_name }}-$(git log --format=%h -1)
+          cd ../dvml
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          COMMIT_MSG=utils-${{ github.ref_name }}-$(git log --format=%h -1)
           git add -f utils
           git commit -m $COMMIT_MSG
           git push -f origin main
