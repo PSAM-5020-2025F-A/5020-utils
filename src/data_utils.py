@@ -180,7 +180,7 @@ class LFWUtils:
     precision_sum = np.sum(cm, axis=0)
     precision = [c/t if t != 0 else 0 for c,t in zip(np.diagonal(cm), precision_sum)]
     top_idx = np.argsort(precision)
-    top_precision = list(reversed(labels_np[top_idx]))
+    top_precision = list(reversed(labels_np[top_idx].tolist()))
     return top_precision[:top]
 
   @classmethod
@@ -190,5 +190,5 @@ class LFWUtils:
     recall_sum = np.sum(cm, axis=1)
     recall = [c/t if t != 0 else 0 for c,t in zip(np.diagonal(cm), recall_sum)]
     top_idx = np.argsort(recall)
-    top_recall = list(reversed(labels_np[top_idx]))
+    top_recall = list(reversed(labels_np[top_idx].tolist()))
     return top_recall[:top]
