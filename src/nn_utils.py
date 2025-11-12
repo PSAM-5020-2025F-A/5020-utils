@@ -23,12 +23,12 @@ def NormalizeMinMax(min=0.0, max=1.0):
 def batch_to_sized_grid(batch, max_dim=500):
   grid_t = (255 * tv_make_grid(batch, normalize=True, scale_each=True)).permute(1,2,0)
   gh,gw = grid_t.shape[0:2]
+  nimg = PImage.new("RGB", (gw, gh))
+  pxs = grid_t.int().reshape(-1, 3).tolist()
+  nimg.putdata([tuple(p) for p in pxs])
+
   scale = max_dim / max(gw, gh)
   nh,nw = int(scale * gh), int(scale * gw)
-  nimg = PImage.new("RGB", (gw, gh))
-
-  # TODO: TEST
-  nimg.putdata(grid_t[:,:,:3].int().reshape(-1, 3).tolist())
   return nimg.resize((nw, nh))
 
 def display_activation_grids(layer_activations, sample_idx, max_imgs=64, max_dim=720):
