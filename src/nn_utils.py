@@ -1,7 +1,13 @@
-import torch
-
 from IPython.display import display
 from PIL import Image as PImage
+
+from torch import nn, Tensor
+from torch import no_grad, cat
+from torch import log as t_log, exp as t_exp
+
+from torch.distributions import Normal
+from torch.nn import functional as F
+
 from torchvision.utils import make_grid as tv_make_grid
 
 def get_num_params(m):
@@ -10,7 +16,7 @@ def get_num_params(m):
 
 def get_labels(model, inputs):
   model.eval()
-  with torch.no_grad():
+  with no_grad():
     y_pred = model(inputs).argmax(dim=1)
     return [l.item() for l in y_pred]
 
@@ -44,3 +50,55 @@ def display_kernel_grids(layer_kernels, max_imgs=64, max_dim=256):
     batch = kernels[:max_imgs, :n_channels]
     print(f"\n{layer}: {kernels.shape[-2]} x {kernels.shape[-1]}")
     display(batch_to_sized_grid(batch, max_dim))
+
+
+class VAE(nn.Module):
+  def __init__(self, in_size, hidden_size=1024, latent_size=16):
+    super().__init__()
+    self.flat = nn.Flatten(start_dim=1)
+    self.in2hid = nn.Linear(in_size, hidden_size)
+    self.hid2mean = nn.Linear(hidden_size, latent_size)
+    self.hid2std = nn.Linear(hidden_size, latent_size)
+    self.z2hid = nn.Linear(latent_size, hidden_size)
+    self.hid2dec = nn.Linear(hidden_size, in_size)
+    self.N = Normal(Tensor([0]).to("cuda"), Tensor([1]).to("cuda"))
+    self.kl = 0
+
+  def encode(self, x):
+    x = self.flat(x)
+    hid = F.silu(self.in2hid(x))
+    mean = self.hid2mean(hid)
+    logvar = self.hid2std(hid)
+    std = t_exp(0.5*logvar)
+    z = mean + std * self.N.sample(mean.shape).squeeze()
+    self.kl = 0.5 * (std**2 + mean**2 - logvar - 1.0).sum()
+    return z
+
+  def decode(self, z):
+    hid = F.silu(self.z2hid(z))
+    dec = F.sigmoid(self.hid2dec(hid))
+    return dec
+
+  def forward(self, x):
+    z = self.encode(x)
+    return self.decode(z)
+
+
+class CVAE(VAE):
+  def __init__(self, in_size, hidden_size=1024, latent_size=16, cond_size=4):
+    super().__init__(in_size, hidden_size, latent_size)
+    self.in2hid = nn.Linear(in_size + cond_size, hidden_size)
+    self.z2hid = nn.Linear(latent_size + cond_size, hidden_size)
+
+  def encode(self, x, cond):
+    x = self.flat(x)
+    xc = cat((x, cond), dim=1)
+    return super().encode(xc)
+
+  def decode(self, z, cond):
+    zc = cat((z, cond), dim=1)
+    return super().decode(zc)
+
+  def forward(self, x, cond):
+    z = self.encode(x, cond)
+    return self.decode(z, cond)
