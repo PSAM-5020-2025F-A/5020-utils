@@ -19,6 +19,20 @@ jobs:
         with:
           token: ${{ secrets.PUSH_TOKEN }}
 
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+
+      - name: Prep Bird audio
+        run: |
+          pushd ./datasets/audio/birds
+          git clone https://huggingface.co/datasets/greenarcade/wav2vec2-vd-bird-sound-classification-dataset birds
+          python prep_birds.py
+          mv ./birds/test ./birds/train ./
+          rm -rf ./birds
+          popd
+
       - name: Zip Files
         run: |
           ln -s datasets data
@@ -30,6 +44,7 @@ jobs:
           tar -czf rev-sils.tar.gz data/image/rev-sils
           tar -czf keyword-extraction.tar.gz data/text/keyword-extraction
           tar --exclude='data/audio/instruments/raw' -czf instruments.tar.gz data/audio/instruments
+          tar --exclude='data/audio/birds/prep_birds.py' -czf birds.tar.gz data/audio/birds
           tar --exclude='data/image/0801-500/all' -czf 0801-500.tar.gz data/image/0801-500
           tar --exclude='data/image/forest-tree/raw' -czf forest-tree.tar.gz data/image/forest-tree
           tar --exclude='data/image/lfw/raw' -czf lfw.tar.gz data/image/lfw
