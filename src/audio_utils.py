@@ -43,24 +43,26 @@ def logFilter(x, factor=3):
   else:
     return np.exp(factor * np.log(x)) // np.power(10, factor*5)
 
-def fft(samples, filter_factor=3):
+def fft(samples, rate=44100, filter_factor=3):
   _fft = logFilter(np.abs(np.fft.fft(samples * np.hanning(len(samples))))[ :len(samples) // 2], filter_factor).tolist()
   num_samples = len(_fft)
-  hps = (44100//2) / num_samples
+  hps = (rate//2) / num_samples
   _freqs = [s * hps for s in range(num_samples)]
   return _fft, _freqs
 
-def stft(samples, window_len=1024):
+def stft(samples, rate=44100, window_len=1024):
   _times = list(range(0, len(samples), window_len))
 
-  sample_windows = []
-  for s in _times:
-    sample_windows.append(samples[s : s + window_len])
+  hps = (rate//2) / (window_len//2)
+  _freqs = [s * hps for s in range(window_len//2)]
 
+  sample_windows = [samples[s : s + window_len] for s in _times]
   sample_windows[-1] = (sample_windows[-1] + len(sample_windows[0]) * [0])[:len(sample_windows[0])]
-  _ffts = [np.log(fft(s, filter_factor=0)[0]).tolist() for s in sample_windows]
-  _, _freqs = fft(sample_windows[0], filter_factor=0)
-  return _ffts, _freqs, _times
+
+  hammed_windows = sample_windows * np.hamming(window_len)
+  _ffts = np.log(np.clip(np.abs(np.fft.rfft(hammed_windows))[:, :window_len//2], a_min=1e-3, a_max=None))
+
+  return (_ffts.T).tolist(), _freqs, _times
 
 def cluster_fft_freqs(freqs, energy_freqs, *, top=50, clusters=6):
   energy_freqs = [(round(f), e) for f,e in zip(freqs, energy_freqs)]
