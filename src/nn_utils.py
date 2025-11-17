@@ -15,10 +15,14 @@ def get_num_params(m):
   return psum
 
 def get_labels(model, inputs):
+  batch_size = 15
   model.eval()
+  labels = []
   with no_grad():
-    y_pred = model(inputs).argmax(dim=1)
-    return [l.item() for l in y_pred]
+    for batch_start in list(range(0, len(inputs), batch_size)):
+      y_pred = model(inputs[batch_start:batch_start + batch_size]).argmax(dim=1)
+      labels += [l.item() for l in y_pred]
+  return labels
 
 def NormalizeMinMax(min=0.0, max=1.0):
   def mmn(t):
