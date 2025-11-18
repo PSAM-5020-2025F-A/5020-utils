@@ -39,8 +39,8 @@ jobs:
 
       - name: Create Dockerfiles
         run: |
-          echo -e "FROM mcr.microsoft.com/devcontainers/python:3.10\nRUN apt-get update\nRUN pip3 install ipykernel ipywidgets matplotlib pandas scikit-learn gradio_client\n" > ./ml.Dockerfile
-          echo -e "FROM mcr.microsoft.com/devcontainers/python:3.10\nRUN apt-get update\nRUN pip3 install ipykernel ipywidgets matplotlib pandas scikit-learn gradio_client\nRUN pip3 install torch torchvision tqdm --index-url https://download.pytorch.org/whl/cpu\n" > ./nn.Dockerfile
+          echo -e "FROM mcr.microsoft.com/devcontainers/python:3.10\nRUN apt-get update\nRUN pip3 install ipykernel ipywidgets matplotlib pandas scikit-learn gradio_client opencv-python-headless opencv-contrib-python-headless\n" > ./ml.Dockerfile
+          echo -e "FROM mcr.microsoft.com/devcontainers/python:3.10\nRUN apt-get update\nRUN pip3 install ipykernel ipywidgets matplotlib pandas scikit-learn gradio_client opencv-python-headless opencv-contrib-python-headless\nRUN pip3 install torch torchvision tqdm --index-url https://download.pytorch.org/whl/cpu\n" > ./nn.Dockerfile
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
