@@ -33,6 +33,14 @@ jobs:
           rm -rf ./birds
           popd
 
+      - name: Prep Flowers102
+        run: |
+          pushd ./datasets/image/flowers102
+          wget -qO- https://www.robots.ox.ac.uk/~vgg/data/flowers/102/102flowers.tgz | tar xz
+          python prep_flowers102.py
+          rm -rf ./jpg *json *.ipynb
+          popd
+
       - name: Zip Files
         run: |
           ln -s datasets data
@@ -46,6 +54,7 @@ jobs:
           tar --exclude='data/audio/instruments/raw' -czf instruments.tar.gz data/audio/instruments
           tar --exclude='data/audio/birds/prep_birds.py' -czf birds.tar.gz data/audio/birds
           tar --exclude='data/image/0801-500/all' -czf 0801-500.tar.gz data/image/0801-500
+          tar --exclude='data/image/flowers102/prep_flowers102.py' -czf flowers102.tar.gz data/image/flowers102
           tar --exclude='data/image/forest-tree/raw' -czf forest-tree.tar.gz data/image/forest-tree
           tar --exclude='data/image/lfw/raw' -czf lfw.tar.gz data/image/lfw
 
