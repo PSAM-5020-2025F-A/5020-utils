@@ -1,8 +1,8 @@
 from IPython.display import display
 from PIL import Image as PImage
 
-from torch import nn, Tensor
-from torch import no_grad, cat
+from torch import nn, no_grad, Tensor
+from torch import cat, randn_like
 from torch import log as t_log, exp as t_exp
 
 from torch.distributions import Normal
@@ -56,8 +56,21 @@ def display_kernel_grids(layer_kernels, max_imgs=64, max_dim=256):
     display(batch_to_sized_grid(batch, max_dim))
 
 
+def KLDivergenceLoss(mu2=0, sig2=1):
+  if mu2 == 0 and sig2 == 1:
+    def comp_kl(mu1, sig1):
+      return -0.5 * (1.0 + 2 * t_log(sig1) - mu1.pow(2) - sig1.pow(2)).sum()
+    return comp_kl
+
+  log_sig2 = t_log(sig2)
+  two_sig2_sq = 2 * sig2.pow(2)
+  def comp_kl(mu1, sig1):
+    return (log_sig2 - t_log(sig1) + (sig1.pow(2) + (mu1 - mu2).pow(2)) / two_sig2_sq - 0.5).sum()
+  return comp_kl
+
+
 class VAE(nn.Module):
-  def __init__(self, in_size, hidden_size=1024, latent_size=16):
+  def __init__(self, in_size, hidden_size=1024, latent_size=16, decode_activation=None):
     super().__init__()
     self.flat = nn.Flatten(start_dim=1)
     self.in2hid = nn.Linear(in_size, hidden_size)
@@ -65,8 +78,12 @@ class VAE(nn.Module):
     self.hid2std = nn.Linear(hidden_size, latent_size)
     self.z2hid = nn.Linear(latent_size, hidden_size)
     self.hid2dec = nn.Linear(hidden_size, in_size)
-    self.N = Normal(Tensor([0]).to("cuda"), Tensor([1]).to("cuda"))
-    self.kl = 0
+
+    self.decact = nn.Identity()
+    if decode_activation == "sigmoid":
+      self.decact = nn.Sigmoid()
+    elif decode_activation == "tanh":
+      self.decact = nn.Tanh()
 
   def encode(self, x):
     x = self.flat(x)
@@ -74,18 +91,21 @@ class VAE(nn.Module):
     mean = self.hid2mean(hid)
     logvar = self.hid2std(hid)
     std = t_exp(0.5*logvar)
-    z = mean + std * self.N.sample(mean.shape).squeeze()
-    self.kl = 0.5 * (std**2 + mean**2 - logvar - 1.0).sum()
+    return mean, std
+
+  def sample(self, mu, sigma):
+    z = mu + sigma * randn_like(sigma)
     return z
 
   def decode(self, z):
     hid = F.silu(self.z2hid(z))
-    dec = F.sigmoid(self.hid2dec(hid))
+    dec = self.decact(self.hid2dec(hid))
     return dec
 
   def forward(self, x):
-    z = self.encode(x)
-    return self.decode(z)
+    mu, sig = self.encode(x)
+    z = self.sample(mu, sig)
+    return self.decode(z), mu, sig
 
 
 class CVAE(VAE):
@@ -104,5 +124,6 @@ class CVAE(VAE):
     return super().decode(zc)
 
   def forward(self, x, cond):
-    z = self.encode(x, cond)
-    return self.decode(z, cond)
+    mu, sig = self.encode(x, cond)
+    z = self.sample(mu, sig)
+    return self.decode(z, cond), mu, sig
